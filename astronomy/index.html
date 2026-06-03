@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>擬似太陽系シミュレーション - 最終完成版</title>
     <style>
-        /* 全体に上品で引き締まった明朝体（Shippori Mincho / Noto Serif JP）を一括適用 */
         body, input, button {
             margin: 0;
             overflow: hidden;
@@ -13,7 +12,6 @@
             font-family: 'Shippori Mincho', 'Noto Serif JP', serif;
             letter-spacing: 0.08em; 
         }
-        /* タイトルパネル */
         #title-panel {
             position: absolute;
             top: 20px;
@@ -28,7 +26,6 @@
         }
         h1, h2, p { margin: 5px 0; }
         
-        /* 詳細解説パネル */
         #info-panel {
             position: absolute;
             top: 20px;
@@ -56,7 +53,6 @@
         }
         .data-label { color: #88ccff; }
 
-        /* 時間コントロールパネルのスタイル */
         #control-panel {
             position: absolute;
             bottom: 20px;
@@ -143,25 +139,20 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // 1. シーンの作成
         const scene = new THREE.Scene();
 
-        // 2. カメラの作成
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 60, 90);
 
-        // 3. レンダラーの作成
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 4. コントロールの設定（RM様が調整された固有速度「7.5」を厳密に保持）
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.zoomSpeed = 7.5;
 
-        // ライティングの最適化
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
         scene.add(ambientLight);
 
@@ -169,7 +160,6 @@
         dirLight.position.set(20, 40, 20);
         scene.add(dirLight);
 
-        // プログラムでリアルな天体模様を自動生成する関数
         function createPlanetTexture(baseColorStr, stripeColorStr, hasStripes) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
@@ -195,14 +185,12 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // 5. 太陽の作成
         const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
         const sunTexture = createPlanetTexture('#ff6600', '#ffcc00', true);
         const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
         const sun = new THREE.Mesh(sunGeometry, sunMaterial);
         scene.add(sun);
 
-        // 惑星データシート
         const planetsData = [
             { name: '水星', radius: 0.5, distance: 10,  speed: 0.03,   baseColor: '#888888', stripeColor: '#555555', isGas: false, type: '岩石惑星', size: '0.38倍', period: '88日', desc: '太陽に最も近い惑星。大気がほとんどなく、昼夜の温度差が非常に激しい極限の世界です。' },
             { name: '金星', radius: 0.9, distance: 14,  speed: 0.015,  baseColor: '#e6b800', stripeColor: '#b38f00', isGas: true,  type: '岩石惑星', size: '0.95倍', period: '225日', desc: '分厚い二酸化炭素の大気に覆われ、強力な温室効果により表面温度は460℃を超えます。' },
@@ -217,7 +205,6 @@
         const planets = [];
         const textureLoader = new THREE.TextureLoader();
 
-        // 惑星と軌道ラインの生成ループ
         planetsData.forEach((data) => {
             const orbitGeometry = new THREE.BufferGeometry();
             const points = [];
@@ -302,7 +289,6 @@
             });
         });
 
-        // 楕円軌道を持つ彗星データの生成
         const cometData = {
             name: 'ハレー彗星',
             radius: 0.3,
@@ -349,7 +335,6 @@
             trailColor: '#aa88ff'
         });
 
-        // 全天体のトレイル（軌跡）用オブジェクトの初期化
         planets.forEach((planet) => {
             const maxTrailPoints = 50; 
             
@@ -370,10 +355,6 @@
             scene.add(planet.trailLine);
         });
 
-        // ==========================================
-        // 【論理位置適正化】小惑星帯（アステロイドベルト）の事前生成
-        // animateループで参照されるため、関数の上部で初期化を完了させる
-        // ==========================================
         const asteroidGeometry = new THREE.BufferGeometry();
         const asteroidCount = 1000; 
         const asteroidPositions = new Float32Array(asteroidCount * 3);
@@ -390,17 +371,15 @@
 
         asteroidGeometry.setAttribute('position', new THREE.BufferAttribute(asteroidPositions, 3));
 
-        // 小惑星帯のマテリアル設定（サイズ調整と減衰の無効化）
         const asteroidMaterial = new THREE.PointsMaterial({
             color: 0x998877,
-            size: 1.5,                 // 👈 遠くからでも視認できるようにサイズを 1.5 に拡大
-            sizeAttenuation: false     // 👈 カメラからの距離でドットが消滅しないように false に変更
+            size: 1.5,                 
+            sizeAttenuation: false     
         });
 
         const asteroidBelt = new THREE.Points(asteroidGeometry, asteroidMaterial);
         scene.add(asteroidBelt);
 
-        // 時間経過速度の制御
         let timeScale = 1.0;
         const slider = document.getElementById('time-slider');
         const speedDisplay = document.getElementById('speed-display');
@@ -412,11 +391,9 @@
             });
         }
 
-        // 天体衝突ゲーム用の状態変数
         let isCometGameMode = false;
         const meteors = []; 
 
-        // 隕石配置モード切り替えボタンのイベント
         document.getElementById('comet-game-btn').addEventListener('click', () => {
             isCometGameMode = !isCometGameMode;
             const btn = document.getElementById('comet-game-btn');
@@ -429,7 +406,6 @@
             }
         });
 
-        // クリックイベントと判定（Raycaster統合）
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         let targetPlanet = null;
@@ -489,12 +465,10 @@
             }
         });
 
-        // アニメーションループ
         function animate() {
             requestAnimationFrame(animate);
 
             sun.rotation.y += 0.001 * timeScale;
-            // 小惑星帯を一斉に回転公転させる（木星よりも少し速いスピードに設定）
             asteroidBelt.rotation.y += 0.005 * timeScale;
 
             planets.forEach((planet) => {
@@ -536,7 +510,6 @@
                 }
             });
 
-            // 毎フレームの隕石移動および衝突判定処理
             for (let i = meteors.length - 1; i >= 0; i--) {
                 const meteor = meteors[i];
                 
@@ -587,7 +560,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // オリジナル天体を動的に生成する処理
         document.getElementById('add-planet-btn').addEventListener('click', () => {
             const name = document.getElementById('new-name').value;
             const radius = parseFloat(document.getElementById('new-radius').value);
@@ -671,7 +643,6 @@
             }, 1500);
         });
 
-        // 宇宙の背景（星々のパーティクル）の作成
         const starsGeometry = new THREE.BufferGeometry();
         const starsCount = 3000; 
         const starPositions = new Float32Array(starsCount * 3); 
